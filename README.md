@@ -1,7 +1,7 @@
 # getAllUrls
 Script to get all the urls of a website.
 
-Uses (Node Crawler)[https://github.com/bda-research/node-crawler] recursively grab all the href values of starting url. Then uses those urls to find the next group of urls until no new urls are available to crawl.
+Uses [Node Crawler](https://github.com/bda-research/node-crawler) recursively grab all the href values of starting url. Then uses those urls to find the next group of urls until no new urls are available to crawl.
 Writes to a js file.
 
 ## Setup
