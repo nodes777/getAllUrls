@@ -1,59 +1,69 @@
 const prefixes = ["http://", "https://", "www."];
 const suffixes = [".com", ".org", ".gov"];
+const Crawler = require("crawler");
 
-const getAllUrls = (startUrl) => {
-	const Crawler = require("crawler");
+module.exports = getAllUrls = (startUrl) => {
+	return new Promise((resolve, reject) => {
+		// remove prefixes from startUrl
+		const rootUrl = prefixes.reduce((accum, curr) => {
+			return accum.replace(curr, "");
+		}, startUrl);
 
-	// remove prefixes from startUrl
-	const rootUrl = prefixes.reduce((accum, curr) => {
-		return accum.replace(curr, "");
-	}, startUrl);
+		let crawledUrls = [];
+		let urlsToCrawl = [startUrl];
 
-	let crawledUrls = [];
-	let urlsToCrawl = [startUrl];
+		const c = new Crawler({
+			maxConnections: 1000,
+			// This will be called for each crawled page
+			callback: (error, res, done) => {
+				const allLinks = getAllLinks(error, res, done, rootUrl);
+				if (allLinks) {
+					const urls = allLinks.map((val) =>
+						// replace relative links with http protocol - need to match starting urls protocol
+						val.startsWith(".")
+							? val.replace(".", `http://${rootUrl}`)
+							: val.startsWith("/")
+							? val.replace("/", `http://${rootUrl}/`)
+							: val
+					);
+					crawledUrls.push(res.options.uri);
 
-	const c = new Crawler({
-		maxConnections: 1000,
-		// This will be called for each crawled page
-		callback: (error, res, done) => {
-			const x = doWork(error, res, done, rootUrl);
-			if (x) {
-				const urls = x.map((val) =>
-					// replace relative links with http protocol
-					val.startsWith(".")
-						? val.replace(".", `https://${rootUrl}`)
-						: val.startsWith("/")
-						? val.replace("/", `https://${rootUrl}/`)
-						: val
-				);
-				crawledUrls.push(res.options.uri);
+					urlsToCrawl.push(...urls);
+					urlsToCrawl = urlsToCrawl.filter((url) => !crawledUrls.includes(url));
 
-				urlsToCrawl.push(...urls);
-				urlsToCrawl = urlsToCrawl.filter((url) => !crawledUrls.includes(url));
-
-				if (urlsToCrawl.length > 0) {
-					c.queue(urlsToCrawl);
-				} else {
-					// This gets called at the end of every cycle, need to identify when queue can actually call done()
-					console.log("No urls left to crawl");
-					console.log("Crawled: ");
-					console.log(crawledUrls);
+					const returnObj = { urlsToCrawl, crawledUrls };
 					done();
 				}
+			},
+		});
+
+		// Queue starting url with specific callback
+		c.queue(startUrl);
+
+		c.on("drain", () => {
+			console.log("Drained");
+			console.log("Urls crawled: ");
+			console.log(crawledUrls);
+			console.log("Urls to crawl: ");
+			console.log(urlsToCrawl);
+			urlsToCrawl = urlsToCrawl.filter((url) => !crawledUrls.includes(url));
+			// start queueing next set
+			urlsToCrawl.forEach((url) => {
+				c.queue(url);
+			});
+
+			if (urlsToCrawl.length === 0) {
+				console.log("All urls have been read!");
+				resolve(crawledUrls);
+				return crawledUrls;
 			}
-		},
-	});
+		});
 
-	// Queue starting url with specific callback
-	c.queue(startUrl);
-
-	c.on("drain", () => {
-		console.log("Urls crawled: ");
-		console.log(crawledUrls);
+		return crawledUrls;
 	});
 };
 
-const doWork = (error, res, done, rootUrl) => {
+const getAllLinks = (error, res, done, rootUrl) => {
 	let links = [];
 	if (error) {
 		console.log(error);
@@ -91,4 +101,4 @@ const doWork = (error, res, done, rootUrl) => {
 	done();
 };
 
-getAllUrls("https://github.com/bda-research/node-crawler");
+// getAllUrls("https://github.com/bda-research/node-crawler");
