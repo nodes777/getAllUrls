@@ -5,7 +5,7 @@ const input = args[0];
 const getAllUrls = require("./getAllUrls");
 
 getAllUrls(input).then((allUrls) => {
-	console.log("back in index");
+	console.log("Back in index");
 
 	console.log(allUrls);
 

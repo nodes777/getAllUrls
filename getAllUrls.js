@@ -1,5 +1,4 @@
 const prefixes = ["http://", "https://", "www."];
-const suffixes = [".com", ".org", ".gov"];
 const Crawler = require("crawler");
 
 module.exports = getAllUrls = (startUrl) => {
@@ -21,9 +20,9 @@ module.exports = getAllUrls = (startUrl) => {
 					const urls = allLinks.map((val) =>
 						// replace relative links with http protocol - need to match starting urls protocol
 						val.startsWith(".")
-							? val.replace(".", `http://${rootUrl}`)
+							? val.replace(".", `${startUrl}`)
 							: val.startsWith("/")
-							? val.replace("/", `http://${rootUrl}/`)
+							? val.replace("/", `${startUrl}/`)
 							: val
 					);
 					crawledUrls.push(res.options.uri);
@@ -31,7 +30,6 @@ module.exports = getAllUrls = (startUrl) => {
 					urlsToCrawl.push(...urls);
 					urlsToCrawl = urlsToCrawl.filter((url) => !crawledUrls.includes(url));
 
-					const returnObj = { urlsToCrawl, crawledUrls };
 					done();
 				}
 			},
@@ -41,11 +39,6 @@ module.exports = getAllUrls = (startUrl) => {
 		c.queue(startUrl);
 
 		c.on("drain", () => {
-			console.log("Drained");
-			console.log("Urls crawled: ");
-			console.log(crawledUrls);
-			console.log("Urls to crawl: ");
-			console.log(urlsToCrawl);
 			urlsToCrawl = urlsToCrawl.filter((url) => !crawledUrls.includes(url));
 			// start queueing next set
 			urlsToCrawl.forEach((url) => {
